@@ -7,11 +7,17 @@ const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workerPath = resolve(projectRoot, "dist/server/index.js");
 const manifestPath = resolve(projectRoot, "dist/.openai/hosting.json");
 
-const [source, manifest] = await Promise.all([
-  readFile(workerPath, "utf8"),
-  readFile(manifestPath, "utf8"),
-]);
-JSON.parse(manifest);
+const source = await readFile(workerPath, "utf8");
+
+try {
+  const manifest = await readFile(manifestPath, "utf8");
+  JSON.parse(manifest);
+} catch (error) {
+  if (error.code !== "ENOENT") {
+    throw error;
+  }
+  console.log("Optional hosting manifest not found; skipping.");
+}
 
 // A data URL forces ESM parsing even though the generated output has no package.json.
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
