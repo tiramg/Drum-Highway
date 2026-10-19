@@ -1,1 +1,10 @@
-{"name":"drum-highway-live","private":true,"type":"module","scripts":{"build":"node scripts/build-worker.mjs && bash scripts/build.sh && node scripts/validate-artifact.mjs","test":"node tests/live.test.mjs"}}
+{
+  "name": "drum-highway-live",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-worker.mjs && bash scripts/build.sh && node scripts/validate-artifact.mjs",
+    "test": "node tests/live.test.mjs",
+    "start": "node render-server.mjs"
+  }
+}
