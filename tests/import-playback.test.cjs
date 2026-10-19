@@ -1,0 +1,21 @@
+const fs=require('node:fs');let setup=fs.readFileSync('tests/game.test.cjs','utf8').split("assert.equal(run('position')")[0];
+setup+=`
+Element.prototype.close=function(){};Element.prototype.removeAttribute=function(){};Element.prototype.load=function(){};Element.prototype.pause=function(){this.paused=true};Element.prototype.play=async function(){this.paused=false};
+context.SongAlignment=require('../dist/song-alignment.js');context.URL=URL;
+const player=get('localSongPlayer');player.currentTime=0;player.playbackRate=1;player.readyState=4;player.paused=true;
+vm.runInContext(fs.readFileSync('dist/song-import.js','utf8'),context);
+const a={offset:2,stretch:1.01,anchors:[],confidence:90,accepted:true};const uncertain={offset:1,stretch:1,anchors:[],confidence:15,accepted:false};
+context.fixture={id:'test',title:'Test song',chart:{notes:Array.from({length:20},(_,i)=>({t:i*.6,id:'snare'})),bars:[0,2.4],duration:14},versions:{original:{blob:new Blob(['audio']),duration:18,alignment:a},drumless:{blob:new Blob(['audio']),duration:17,alignment:uncertain}}};
+run('selectImportedSong(fixture)');assert.equal(run('notes[0].t'),2);assert.equal(run('notes[1].t'),2.606);assert.equal(get('songAlignment').hidden,true);
+player.currentTime=2;player.paused=false;run('syncImportedClock();strike("snare")');assert.equal(run('score'),100);assert.equal(run('position'),2);
+player.currentTime=8;run('syncImportedClock()');assert.equal(run('score'),0);assert.equal(run('notes[0].result'),'skipped');
+run('loadSongVersion("drumless")');assert.equal(run('importedMedia.version'),'drumless');assert.equal(get('mode').value,'practice');assert.equal(get('mode').disabled,true);assert.equal(run('notes[0].t'),1);
+player.currentTime=1;player.paused=false;run('syncImportedClock();strike("snare")');assert.equal(run('score'),0,'uncertain alignment must not award points');
+player.readyState=2;run('syncImportedClock()');assert.equal(run('running'),false,'buffering must stop judging');
+player.readyState=4;run('reset()');assert.equal(player.currentTime,0);assert.equal(player.paused,true);
+run('returnToGroove()');assert.equal(run('importedMedia'),null);assert.equal(run('songChart'),null);assert.equal(get('mode').disabled,false);assert.equal(run('position'),-3);
+context.fixture.prepared=true;context.fixture.versions.original={url:'catalog/test/original.wav',duration:18,alignment:{offset:0,stretch:1,anchors:[],accepted:true,confidence:100}};context.fixture.versions.drumless={url:'catalog/test/drumless.wav',duration:18,alignment:{offset:0,stretch:1,anchors:[],accepted:true,confidence:100}};run('selectImportedSong(fixture)');assert.equal(player.src,'catalog/test/original.wav');assert.equal(run('notes[1].t'),.6);run('loadSongVersion("drumless")');assert.equal(player.src,'catalog/test/drumless.wav');assert.equal(run('notes[1].t'),.6);assert.match(get('songChartStatus').textContent,/same timing/);run('returnToGroove()');
+context.fetch=async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync('dist/'+url,'utf8'))});vm.runInContext(fs.readFileSync('dist/song-catalog.js','utf8').replace(/loadPreparedCatalog\(\);\s*$/,''),context);run('loadPreparedCatalog()').then(()=>{assert.equal(run('preparedSongs.length'),4);assert.match(run('preparedEntries()[0].badge'),/Ready/);return run('selectPreparedSong(preparedSongs[0])')}).then(()=>{assert.equal(player.src,'catalog/river-drive/original.wav');assert.equal(run('notes[0].t'),2);run('loadSongVersion("drumless")');assert.equal(player.src,'catalog/river-drive/drumless.wav');assert.equal(run('notes[0].t'),2);console.log('PASS catalog retrieval, ready entries, chart loading, and both hosted recording modes')}).catch(e=>{console.error(e);process.exitCode=1});
+console.log('PASS imported playback, separate version alignment, seek resets, buffering, practice gating, restart, and returning to groove');
+`;
+eval(setup);
